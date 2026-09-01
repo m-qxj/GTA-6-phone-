@@ -1,0 +1,18 @@
+# Godot 4+ specific ignores
+.godot/
+.import/
+export.cfg
+export_credentials.cfg
+*.translation
+
+# Mono-specific ignores
+.mono/
+data_*/
+
+# System
+.DS_Store
+
+# Build output (CI uploads the APK as an artifact instead)
+build/
+*.apk
+*.aab

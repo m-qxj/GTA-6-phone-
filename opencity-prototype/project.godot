@@ -1,0 +1,27 @@
+config_version=5
+
+[application]
+
+config/name="Open City Prototype"
+run/main_scene="res://scenes/main.tscn"
+config/icon="res://icon.svg"
+
+[autoload]
+
+GameManager="*res://scripts/game_manager.gd"
+SettingsManager="*res://scripts/settings_manager.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/handheld/orientation="landscape"
+window/energy_saving/keep_screen_on=true
+
+[rendering]
+
+renderer/rendering_method="mobile"
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
