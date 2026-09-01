@@ -32,6 +32,19 @@ jobs:
             -keyalg RSA -keysize 2048 -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
 
+      - name: Configure Godot Editor Settings
+        run: |
+          mkdir -p ~/.config/godot
+          cat > ~/.config/godot/editor_settings-4.tres << 'EOF'
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "/root/android-sdk"
+          export/android/debug_keystore = "/root/.android/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+
       - name: Create build directory
         run: mkdir -v -p opencity-prototype/build/android
 
@@ -39,6 +52,8 @@ jobs:
         run: |
           cd opencity-prototype
           godot --headless --verbose --export-debug "Android" build/android/opencity-debug.apk
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
