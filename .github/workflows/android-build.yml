@@ -16,7 +16,7 @@ jobs:
         with:
           lfs: true
 
-      - name: Move export templates into place
+      - name: Setup Godot Export Templates
         run: |
           mkdir -v -p ~/.local/share/godot/export_templates
           mv /root/.local/share/godot/export_templates/${GODOT_VERSION} \
@@ -24,7 +24,7 @@ jobs:
         env:
           GODOT_VERSION: 4.3.stable
 
-      - name: Generate a debug keystore
+      - name: Generate Debug Keystore
         run: |
           mkdir -p ~/.android
           keytool -genkey -v -keystore ~/.android/debug.keystore \
@@ -46,15 +46,13 @@ jobs:
           export/android/debug_keystore_pass = "android"
           EOF
 
-      - name: Create build directory
-        run: mkdir -v -p opencity-prototype/build/android
-
-      - name: Export debug APK
+      - name: Build Android APK
         run: |
           cd opencity-prototype
+          mkdir -p build/android
           godot --headless --verbose --export-debug "Android" build/android/opencity-debug.apk
 
-      - name: Upload APK artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: opencity-debug-apk
