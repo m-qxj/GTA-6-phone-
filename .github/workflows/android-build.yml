@@ -60,4 +60,3 @@ jobs:
         with:
           name: opencity-debug-apk
           path: opencity-prototype/build/android/opencity-debug.apk
-          
