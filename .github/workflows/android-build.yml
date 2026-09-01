@@ -8,7 +8,7 @@ on:
 jobs:
   export-android:
     name: Android Export (Debug)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:4.3
     steps:
@@ -32,20 +32,32 @@ jobs:
             -keyalg RSA -keysize 2048 -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
 
-      - name: Configure Godot Editor Settings
+      - name: Setup Android SDK and Editor Settings
         run: |
-          mkdir -p ~/.config/godot
-          cat << 'EOF' > ~/.config/godot/editor_settings-4.tres
-          [gd_resource type="EditorSettings" format=3]
+          yes | sdkmanager "platform-tools" "build-tools;33.0.2" "platforms;android-33" || true
 
-          [resource]
-          export/android/android_sdk_path = "/root/android-sdk"
-          export/android/java_sdk_path = "/usr/lib/jvm/java-17-openjdk-amd64"
-          export/android/jdk_path = "/usr/lib/jvm/java-17-openjdk-amd64"
-          export/android/debug_keystore = "/root/.android/debug.keystore"
-          export/android/debug_keystore_user = "androiddebugkey"
-          export/android/debug_keystore_pass = "android"
-          EOF
+          PLATFORM_TOOLS_DIR=$(find / -name "platform-tools" -type d 2>/dev/null | head -n 1)
+          if [ -n "$PLATFORM_TOOLS_DIR" ]; then
+            SDK_PATH=$(dirname "$PLATFORM_TOOLS_DIR")
+          else
+            SDK_PATH="/root/android-sdk"
+          fi
+
+          JDK_PATH="/usr/lib/jvm/java-17-openjdk-amd64"
+          if [ ! -d "$JDK_PATH" ]; then
+            JDK_PATH="/usr/lib/jvm/java-11-openjdk-amd64"
+          fi
+
+          mkdir -p ~/.config/godot
+          echo '[gd_resource type="EditorSettings" format=3]' > ~/.config/godot/editor_settings-4.tres
+          echo '' >> ~/.config/godot/editor_settings-4.tres
+          echo '[resource]' >> ~/.config/godot/editor_settings-4.tres
+          echo "export/android/android_sdk_path = \"${SDK_PATH}\"" >> ~/.config/godot/editor_settings-4.tres
+          echo "export/android/java_sdk_path = \"${JDK_PATH}\"" >> ~/.config/godot/editor_settings-4.tres
+          echo "export/android/jdk_path = \"${JDK_PATH}\"" >> ~/.config/godot/editor_settings-4.tres
+          echo 'export/android/debug_keystore = "/root/.android/debug.keystore"' >> ~/.config/godot/editor_settings-4.tres
+          echo 'export/android/debug_keystore_user = "androiddebugkey"' >> ~/.config/godot/editor_settings-4.tres
+          echo 'export/android/debug_keystore_pass = "android"' >> ~/.config/godot/editor_settings-4.tres
 
       - name: Build Android APK
         run: |
@@ -58,3 +70,4 @@ jobs:
         with:
           name: opencity-debug-apk
           path: opencity-prototype/build/android/opencity-debug.apk
+          
