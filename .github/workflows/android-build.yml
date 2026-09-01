@@ -35,12 +35,14 @@ jobs:
       - name: Configure Godot Editor Settings
         run: |
           mkdir -p ~/.config/godot
-          cat > ~/.config/godot/editor_settings-4.tres << 'EOF'
+          HOME_DIR=$HOME
+          cat > ~/.config/godot/editor_settings-4.tres << EOF
           [gd_resource type="EditorSettings" format=3]
 
           [resource]
-          export/android/android_sdk_path = "/root/android-sdk"
-          export/android/debug_keystore = "/root/.android/debug.keystore"
+          export/android/android_sdk_path = "/usr/lib/android-sdk"
+          export/android/jdk_path = "/usr/lib/jvm/java-11-openjdk-amd64"
+          export/android/debug_keystore = "$HOME_DIR/.android/debug.keystore"
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
           EOF
@@ -52,8 +54,6 @@ jobs:
         run: |
           cd opencity-prototype
           godot --headless --verbose --export-debug "Android" build/android/opencity-debug.apk
-        env:
-          JAVA_HOME: /usr/lib/jvm/java-11-openjdk-amd64
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
