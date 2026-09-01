@@ -24,6 +24,14 @@ jobs:
         env:
           GODOT_VERSION: 4.3.stable
 
+      - name: Install Android Build Tools
+        run: |
+          # Install build tools matching the target SDK version
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "build-tools;33.0.2" "platforms;android-33"
+        env:
+          ANDROID_HOME: /root/android-sdk
+
       - name: Generate Debug Keystore
         run: |
           mkdir -p ~/.android
@@ -39,16 +47,25 @@ jobs:
           JAVA_PATH=${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}
 
           cat << EOF > ~/.config/godot/editor_settings-4.tres
-          [gd_resource type="EditorSettings" format=3]
+[gd_resource type="EditorSettings" format=3]
 
-          [resource]
-          export/android/android_sdk_path = "${SDK_PATH}"
-          export/android/java_sdk_path = "${JAVA_PATH}"
-          export/android/jdk_path = "${JAVA_PATH}"
-          export/android/debug_keystore = "/root/.android/debug.keystore"
-          export/android/debug_keystore_user = "androiddebugkey"
-          export/android/debug_keystore_pass = "android"
-          EOF
+[resource]
+export/android/android_sdk_path = "${SDK_PATH}"
+export/android/java_sdk_path = "${JAVA_PATH}"
+export/android/jdk_path = "${JAVA_PATH}"
+export/android/debug_keystore = "/root/.android/debug.keystore"
+export/android/debug_keystore_user = "androiddebugkey"
+export/android/debug_keystore_pass = "android"
+EOF
+
+      - name: Verify Godot Configuration
+        run: |
+          # Verify export templates are in place
+          ls -la ~/.local/share/godot/export_templates/
+          # Verify keystore exists
+          ls -la ~/.android/debug.keystore
+          # Verify editor settings
+          cat ~/.config/godot/editor_settings-4.tres
 
       - name: Build Android APK
         run: |
@@ -61,4 +78,3 @@ jobs:
         with:
           name: opencity-debug-apk
           path: opencity-prototype/build/android/opencity-debug.apk
-          
