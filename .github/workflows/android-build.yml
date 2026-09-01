@@ -35,17 +35,16 @@ jobs:
       - name: Configure Godot Editor Settings
         run: |
           mkdir -p ~/.config/godot
-          HOME_DIR=$HOME
-          cat > ~/.config/godot/editor_settings-4.tres << EOF
-          [gd_resource type="EditorSettings" format=3]
+          cat > ~/.config/godot/editor_settings-4.tres << 'EOF'
+[gd_resource type="EditorSettings" format=3]
 
-          [resource]
-          export/android/android_sdk_path = "/usr/lib/android-sdk"
-          export/android/jdk_path = "/usr/lib/jvm/java-11-openjdk-amd64"
-          export/android/debug_keystore = "$HOME_DIR/.android/debug.keystore"
-          export/android/debug_keystore_user = "androiddebugkey"
-          export/android/debug_keystore_pass = "android"
-          EOF
+[resource]
+export/android/android_sdk_path = "/usr/lib/android-sdk"
+export/android/jdk_path = "/usr/lib/jvm/java-11-openjdk-amd64"
+export/android/debug_keystore = "$HOME/.android/debug.keystore"
+export/android/debug_keystore_user = "androiddebugkey"
+export/android/debug_keystore_pass = "android"
+EOF
 
       - name: Create build directory
         run: mkdir -v -p opencity-prototype/build/android
