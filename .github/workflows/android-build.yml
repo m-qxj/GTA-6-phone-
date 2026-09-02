@@ -16,26 +16,32 @@ jobs:
         with:
           lfs: true
 
-      - name: Setup Godot Environment
+      - name: Setup Godot and Android SDK
         run: |
-          # 1. نقل قوالب التصدير إلى مجلد المستخدم الخاص بـ GitHub Actions
           mkdir -p ~/.local/share/godot/export_templates
           cp -r /root/.local/share/godot/export_templates/* ~/.local/share/godot/export_templates/ 2>/dev/null || true
 
-          # 2. إعداد ملف إعدادات Godot وتوجيهه للمسار الصحيح لـ Android SDK
+          mkdir -p /root/.android
+          keytool -genkey -v -keystore /root/debug.keystore \
+            -storepass android -alias androiddebugkey -keypass android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+          export ANDROID_HOME=/root/android-sdk
+          mkdir -p $ANDROID_HOME
+          yes | sdkmanager --licenses || true
+          sdkmanager "platform-tools" "build-tools;33.0.2" "platforms;android-33" || true
+
           mkdir -p ~/.config/godot
-          cat << 'EOF' > ~/.config/godot/editor_settings-4.tres
-          [gd_resource type="EditorSettings" format=3]
+          echo '[gd_resource type="EditorSettings" format=3]' > ~/.config/godot/editor_settings-4.tres
+          echo '' >> ~/.config/godot/editor_settings-4.tres
+          echo '[resource]' >> ~/.config/godot/editor_settings-4.tres
+          echo 'export/android/android_sdk_path = "/root/android-sdk"' >> ~/.config/godot/editor_settings-4.tres
+          echo 'export/android/java_sdk_path = "/usr/lib/jvm/java-17-openjdk-amd64"' >> ~/.config/godot/editor_settings-4.tres
+          echo 'export/android/debug_keystore = "/root/debug.keystore"' >> ~/.config/godot/editor_settings-4.tres
+          echo 'export/android/debug_keystore_user = "androiddebugkey"' >> ~/.config/godot/editor_settings-4.tres
+          echo 'export/android/debug_keystore_pass = "android"' >> ~/.config/godot/editor_settings-4.tres
 
-          [resource]
-          export/android/android_sdk_path = "/usr/lib/android-sdk"
-          export/android/java_sdk_path = "/usr/lib/jvm/java-17-openjdk-amd64"
-          export/android/debug_keystore = "/root/debug.keystore"
-          export/android/debug_keystore_user = "androiddebugkey"
-          export/android/debug_keystore_pass = "android"
-          EOF
-
-          # نسخ الإعدادات لملف الإصدار 4.3 لضمان توافق المحرك
           cp ~/.config/godot/editor_settings-4.tres ~/.config/godot/editor_settings-4.3.tres
 
       - name: Build Android APK
