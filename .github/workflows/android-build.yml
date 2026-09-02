@@ -22,6 +22,7 @@ jobs:
           cp -r /root/.local/share/godot/export_templates/* ~/.local/share/godot/export_templates/ 2>/dev/null || true
 
           mkdir -p /root/.android
+          rm -f /root/debug.keystore
           keytool -genkey -v -keystore /root/debug.keystore \
             -storepass android -alias androiddebugkey -keypass android \
             -keyalg RSA -keysize 2048 -validity 10000 \
