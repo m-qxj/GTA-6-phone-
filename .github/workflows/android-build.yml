@@ -16,7 +16,7 @@ jobs:
         with:
           lfs: true
 
-      - name: Setup Android SDK, Templates, and Keystore
+      - name: Setup Android SDK Templates and Keystore
         run: |
           mkdir -p /github/home/.local/share/godot/export_templates/4.3.stable
           mkdir -p /root/.local/share/godot/export_templates/4.3.stable
@@ -27,7 +27,7 @@ jobs:
 
           if [ ! -f "/github/home/.local/share/godot/export_templates/4.3.stable/android_debug.apk" ]; then
             wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
-            unzip -q Godot_v4.3-stable_export_templates.tpz
+            python3 -c "import zipfile; zipfile.ZipFile('Godot_v4.3-stable_export_templates.tpz').extractall('.')"
             mv templates/* /github/home/.local/share/godot/export_templates/4.3.stable/
             cp -r /github/home/.local/share/godot/export_templates/4.3.stable/* /root/.local/share/godot/export_templates/4.3.stable/
             rm -rf templates Godot_v4.3-stable_export_templates.tpz
@@ -53,25 +53,22 @@ jobs:
             JDK_PATH="/usr/lib/jvm/java-17-openjdk-amd64"
           fi
 
-          CONFIG_DIRS="/github/home/.config/godot /root/.config/godot"
-          for DIR in $CONFIG_DIRS; do
+          for DIR in /github/home/.config/godot /root/.config/godot; do
             mkdir -p "$DIR"
-            cat << EOF > "$DIR/editor_settings-4.tres"
-[gd_resource type="EditorSettings" format=3]
-
-[resource]
-export/android/android_sdk_path = "${ANDROID_HOME}"
-export/android/java_sdk_path = "${JDK_PATH}"
-export/android/debug_keystore = "/github/home/debug.keystore"
-export/android/debug_keystore_user = "androiddebugkey"
-export/android/debug_keystore_pass = "android"
-EOF
+            echo '[gd_resource type="EditorSettings" format=3]' > "$DIR/editor_settings-4.tres"
+            echo '' >> "$DIR/editor_settings-4.tres"
+            echo '[resource]' >> "$DIR/editor_settings-4.tres"
+            echo "export/android/android_sdk_path = \"${ANDROID_HOME}\"" >> "$DIR/editor_settings-4.tres"
+            echo "export/android/java_sdk_path = \"${JDK_PATH}\"" >> "$DIR/editor_settings-4.tres"
+            echo 'export/android/debug_keystore = "/github/home/debug.keystore"' >> "$DIR/editor_settings-4.tres"
+            echo 'export/android/debug_keystore_user = "androiddebugkey"' >> "$DIR/editor_settings-4.tres"
+            echo 'export/android/debug_keystore_pass = "android"' >> "$DIR/editor_settings-4.tres"
             cp "$DIR/editor_settings-4.tres" "$DIR/editor_settings-4.3.tres"
           done
 
-          sed -i 's|^keystore/debug=.*|keystore/debug="/github/home/debug.keystore"|g' opencity-prototype/export_presets.cfg
-          sed -i 's|^keystore/debug_user=.*|keystore/debug_user="androiddebugkey"|g' opencity-prototype/export_presets.cfg
-          sed -i 's|^keystore/debug_password=.*|keystore/debug_password="android"|g' opencity-prototype/export_presets.cfg
+          sed -i 's|keystore/debug=.*|keystore/debug="/github/home/debug.keystore"|g' opencity-prototype/export_presets.cfg
+          sed -i 's|keystore/debug_user=.*|keystore/debug_user="androiddebugkey"|g' opencity-prototype/export_presets.cfg
+          sed -i 's|keystore/debug_password=.*|keystore/debug_password="android"|g' opencity-prototype/export_presets.cfg
 
       - name: Build Android APK
         run: |
