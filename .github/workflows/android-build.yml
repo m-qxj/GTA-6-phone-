@@ -11,66 +11,64 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:4.3
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
         with:
           lfs: true
 
-      - name: Setup Android SDK Templates and Keystore
+      - name: Setup Android Environment
+        env:
+          HOME: /root
         run: |
-          mkdir -p /github/home/.local/share/godot/export_templates/4.3.stable
-          mkdir -p /root/.local/share/godot/export_templates/4.3.stable
-
-          if [ -d "/root/.local/share/godot/export_templates/4.3.stable" ]; then
-            cp -r /root/.local/share/godot/export_templates/4.3.stable/* /github/home/.local/share/godot/export_templates/4.3.stable/ 2>/dev/null || true
-          fi
-
-          if [ ! -f "/github/home/.local/share/godot/export_templates/4.3.stable/android_debug.apk" ]; then
-            wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
-            python3 -c "import zipfile; zipfile.ZipFile('Godot_v4.3-stable_export_templates.tpz').extractall('.')"
-            mv templates/* /github/home/.local/share/godot/export_templates/4.3.stable/
-            cp -r /github/home/.local/share/godot/export_templates/4.3.stable/* /root/.local/share/godot/export_templates/4.3.stable/
-            rm -rf templates Godot_v4.3-stable_export_templates.tpz
-          fi
-
-          mkdir -p /github/home/.android /root/.android
-          rm -f /github/home/debug.keystore /root/debug.keystore
-          keytool -genkey -v -keystore /github/home/debug.keystore \
-            -storepass android -alias androiddebugkey -keypass android \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=Android Debug,O=Android,C=US"
-          cp /github/home/debug.keystore /root/debug.keystore
-
           export ANDROID_HOME=/root/android-sdk
           mkdir -p $ANDROID_HOME
           yes | sdkmanager --sdk_root=$ANDROID_HOME --licenses || true
           sdkmanager --sdk_root=$ANDROID_HOME "platform-tools" "build-tools;33.0.2" "platforms;android-33" || true
 
-          JAVA_BIN=$(readlink -f $(which java) 2>/dev/null || true)
-          if [ -n "$JAVA_BIN" ]; then
-            JDK_PATH=$(dirname $(dirname "$JAVA_BIN"))
-          else
-            JDK_PATH="/usr/lib/jvm/java-17-openjdk-amd64"
+          mkdir -p /root/.android
+          rm -f /root/debug.keystore
+          keytool -genkey -v -keystore /root/debug.keystore \
+            -storepass android -alias androiddebugkey -keypass android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+          TMPL_DIR="/root/.local/share/godot/export_templates/4.3.stable"
+          mkdir -p "$TMPL_DIR"
+          if [ ! -f "$TMPL_DIR/android_debug.apk" ]; then
+            wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+            python3 -c "import zipfile; zipfile.ZipFile('Godot_v4.3-stable_export_templates.tpz').extractall('.')"
+            cp -r templates/* "$TMPL_DIR/"
+            rm -rf templates Godot_v4.3-stable_export_templates.tpz
           fi
 
-          for DIR in /github/home/.config/godot /root/.config/godot; do
-            mkdir -p "$DIR"
-            echo '[gd_resource type="EditorSettings" format=3]' > "$DIR/editor_settings-4.tres"
-            echo '' >> "$DIR/editor_settings-4.tres"
-            echo '[resource]' >> "$DIR/editor_settings-4.tres"
-            echo "export/android/android_sdk_path = \"${ANDROID_HOME}\"" >> "$DIR/editor_settings-4.tres"
-            echo "export/android/java_sdk_path = \"${JDK_PATH}\"" >> "$DIR/editor_settings-4.tres"
-            echo 'export/android/debug_keystore = "/github/home/debug.keystore"' >> "$DIR/editor_settings-4.tres"
-            echo 'export/android/debug_keystore_user = "androiddebugkey"' >> "$DIR/editor_settings-4.tres"
-            echo 'export/android/debug_keystore_pass = "android"' >> "$DIR/editor_settings-4.tres"
-            cp "$DIR/editor_settings-4.tres" "$DIR/editor_settings-4.3.tres"
-          done
+          mkdir -p /root/.config/godot
+          cat << 'EOF' > /root/.config/godot/editor_settings-4.tres
+          [gd_resource type="EditorSettings" format=3]
 
-          sed -i 's|keystore/debug=.*|keystore/debug="/github/home/debug.keystore"|g' opencity-prototype/export_presets.cfg
-          sed -i 's|keystore/debug_user=.*|keystore/debug_user="androiddebugkey"|g' opencity-prototype/export_presets.cfg
-          sed -i 's|keystore/debug_password=.*|keystore/debug_password="android"|g' opencity-prototype/export_presets.cfg
+          [resource]
+          export/android/android_sdk_path = "/root/android-sdk"
+          export/android/java_sdk_path = "/usr/lib/jvm/java-17-openjdk-amd64"
+          export/android/debug_keystore = "/root/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+          cp /root/.config/godot/editor_settings-4.tres /root/.config/godot/editor_settings-4.3.tres
+
+          mkdir -p /github/home/.config/godot /github/home/.local/share/godot /github/home/.android 2>/dev/null || true
+          cp -r /root/.config/godot /github/home/.config/ 2>/dev/null || true
+          cp -r /root/.local/share/godot/export_templates /github/home/.local/share/godot/ 2>/dev/null || true
+          cp /root/debug.keystore /github/home/debug.keystore 2>/dev/null || true
+
+          sed -i 's|^keystore/debug=.*|keystore/debug="/root/debug.keystore"|g' opencity-prototype/export_presets.cfg
+          sed -i 's|^keystore/debug_user=.*|keystore/debug_user="androiddebugkey"|g' opencity-prototype/export_presets.cfg
+          sed -i 's|^keystore/debug_password=.*|keystore/debug_password="android"|g' opencity-prototype/export_presets.cfg
 
       - name: Build Android APK
+        env:
+          HOME: /root
         run: |
           cd opencity-prototype
           mkdir -p build/android
